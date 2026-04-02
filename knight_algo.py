@@ -81,6 +81,10 @@ def solve_knight_tour(n: int, start_row: int, start_col: int):
     return success, board, path, exec_time
 
 
-def can_have_solution(n: int) -> bool:
+def can_have_solution_size(n: int) -> bool:
     """Tabuleiros menores que 5x5 (exceto 1x1) nao possuem solucao."""
     return n == 1 or n >= 5
+
+def can_have_solution_pos(n,x,y: int) -> bool:
+    """Tabuleiros de tamanho impar e posicao inicial (x+y)%2 == 1 nao possuem solucao"""
+    return (n%2!=1 or (x+y)%2!=1)

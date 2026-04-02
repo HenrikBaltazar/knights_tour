@@ -5,7 +5,7 @@ import tkinter as tk
 import time
 import threading
 
-from knight_algo import solve_knight_tour, can_have_solution
+from knight_algo import solve_knight_tour, can_have_solution_size,can_have_solution_pos
 
 
 class KnightTourApp:
@@ -234,8 +234,11 @@ class KnightTourApp:
             self._draw_board()
 
             # Check solvability
-            if not can_have_solution(n):
+            if not can_have_solution_size(n):
                 self.warn_label.config(text=f"Tabuleiros {n}x{n} nao possuem solucao.")
+                self.start_btn.config(state=DISABLED)
+            elif not can_have_solution_pos(n,row,col):
+                self.warn_label.config(text=f"Posicao: {row},{col} em um tabuleiro de tamanho {n}x{n} nao possui solucao.")
                 self.start_btn.config(state=DISABLED)
             else:
                 self.warn_label.config(text="")
