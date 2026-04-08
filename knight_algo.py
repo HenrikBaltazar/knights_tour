@@ -8,69 +8,50 @@ KNIGHT_MOVES = [
 
 
 def is_valid_move(board: list, row: int, col: int, n: int) -> bool:
-    """Verifica se a posicao (row, col) e valida e ainda nao foi visitada."""
-    return 0 <= row < n and 0 <= col < n and board[row][col] == -1
+    return 0 <= row < n and 0 <= col < n and board[row][col] == -1 #Verifica se a posicao (row, col) e valida e ainda nao foi visitada.
 
 
-def count_onward_moves(board: list, row: int, col: int, n: int) -> int:
-    """
-    Conta o numero de movimentos futuros validos a partir de (row, col).
-    Esta e a essencia da Regra de Warnsdorff: escolhemos o proximo
-    movimento que leva a casa com MENOS opcoes futuras, reduzindo
-    drasticamente o espaco de busca.
-    """
+def lookahead(board: list, row: int, col: int, n: int) -> int: #look-ahead
     count = 0
-    for dr, dc in KNIGHT_MOVES:
-        if is_valid_move(board, row + dr, col + dc, n):
+    for dx, dy in KNIGHT_MOVES:
+        if is_valid_move(board, row + dx, col + dy, n):
             count += 1
-    return count
+    return count # retorna o grau da posicao atual, quantidade de movimentos possiveis
 
 
-def get_next_moves_sorted(board: list, row: int, col: int, n: int) -> list:
-    """
-    Retorna os proximos movimentos ordenados pela Regra de Warnsdorff
-    (grau ascendente). Movimentos com menor numero de saidas futuras
-    sao priorizados, o que evita becos sem saida.
-    """
+def warnsdorff(board: list, row: int, col: int, n: int) -> list:
     moves = []
-    for dr, dc in KNIGHT_MOVES:
-        nr, nc = row + dr, col + dc
-        if is_valid_move(board, nr, nc, n):
-            degree = count_onward_moves(board, nr, nc, n)
-            moves.append((degree, nr, nc))
-    moves.sort()  # Ordena pelo grau (Warnsdorff)
+    for dx, dy in KNIGHT_MOVES:
+        x, y = row + dx, col + dy
+        if is_valid_move(board, x, y, n):
+            degree = lookahead(board, x, y, n)
+            moves.append((degree, x, y))
+    moves.sort()  # Ordena pelo grau ascendente (Warnsdorff)
     return [(r, c) for _, r, c in moves]
 
 
-def solve_knight_tour(n: int, start_row: int, start_col: int):
-    """
-    Resolve o Passeio do Cavalo usando Backtracking + Warnsdorff.
+def knight_tour(n: int, start_row: int, start_col: int):
+    start_time = time.perf_counter() #contador do tempo de execucao
 
-    Complexidade teorica: O(N^2) com a heuristica de Warnsdorff,
-    comparado a O(8^(N^2)) do backtracking puro (forca bruta).
+    board = [[-1] * n for _ in range(n)] #definicao do tabuleiro (lista de listas)
+    path = [(start_row, start_col)] #caminho percorrido pelo cavalo
+    board[start_row][start_col] = 1 #posicao inicial do cavalo
 
-    Retorna: (success, board, path, exec_time_ms)
-    """
-    start_time = time.perf_counter()
+    total_squares = n * n #quantidade total de casas a serem visitadas
 
-    board = [[-1] * n for _ in range(n)]
-    path = [(start_row, start_col)]
-    board[start_row][start_col] = 1
-    total_squares = n * n
-
-    def backtrack(row, col, move_num):
-        if move_num > total_squares:
+    def backtrack(row, col, move_num): 
+        if move_num > total_squares: #condicao de parada, todas as casas foram visitadas
             return True
 
-        for nr, nc in get_next_moves_sorted(board, row, col, n):
-            board[nr][nc] = move_num
-            path.append((nr, nc))
+        for x, y in warnsdorff(board, row, col, n): #chama o algoritmo de decisao do proximo movimento a executar
+            board[x][y] = move_num #visita o tabuleiro
+            path.append((x, y)) #incrementa o caminho
 
-            if backtrack(nr, nc, move_num + 1):
+            if backtrack(x, y, move_num + 1): 
                 return True
 
             # Backtrack: desfaz o movimento
-            board[nr][nc] = -1
+            board[x][y] = -1
             path.pop()
 
         return False
@@ -81,10 +62,8 @@ def solve_knight_tour(n: int, start_row: int, start_col: int):
     return success, board, path, exec_time
 
 
-def can_have_solution_size(n: int) -> bool:
-    """Tabuleiros menores que 5x5 (exceto 1x1) nao possuem solucao."""
+def can_have_solution_size(n: int) -> bool: # Tabuleiros menores que 5x5 (exceto 1x1) nao possuem solucao.
     return n == 1 or n >= 5
 
-def can_have_solution_pos(n,x,y: int) -> bool:
-    """Tabuleiros de tamanho impar e posicao inicial (x+y)%2 == 1 nao possuem solucao"""
+def can_have_solution_pos(n,x,y: int) -> bool: # Tabuleiros de tamanho impar e posicao inicial (x+y)%2 == 1 nao possuem solucao
     return (n%2!=1 or (x+y)%2!=1)

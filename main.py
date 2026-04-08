@@ -5,7 +5,7 @@ import tkinter as tk
 import time
 import threading
 
-from knight_algo import solve_knight_tour, can_have_solution_size,can_have_solution_pos
+from knight_algo import knight_tour, can_have_solution_size,can_have_solution_pos
 
 
 class KnightTourApp:
@@ -270,7 +270,7 @@ class KnightTourApp:
         self._set_status(True)
 
         def solve_and_animate():
-            success, board, path, exec_time = solve_knight_tour(n, r, c)
+            success, board, path, exec_time = knight_tour(n, r, c)
             self.result = (success, board, path, exec_time)
 
             self.root.after(0, lambda: self._after_solve(success, board, path, exec_time, n))
