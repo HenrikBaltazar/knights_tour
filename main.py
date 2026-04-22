@@ -88,7 +88,7 @@ class KnightTourApp:
         self.size_label = ttk.Label(size_frame, text="8 x 8", font=("Consolas", 11, "bold"), bootstyle="info")
         self.size_label.pack(side=RIGHT)
         ttk.Scale(
-            size_frame, from_=1, to=12, variable=self.board_size,
+            size_frame, from_=1, to=31, variable=self.board_size,
             bootstyle="info", command=lambda _: self._update_size_label(),
         ).pack(side=LEFT, fill=X, expand=True, padx=(0, 8))
 
@@ -210,7 +210,7 @@ class KnightTourApp:
             if (r, c) in self.cells:
                 rect, txt = self.cells[(r, c)]
                 self.canvas.itemconfig(rect, fill="#0d7377", outline="#00fff5", width=2)
-                self.canvas.itemconfig(txt, text="K", font=("Consolas", max(cs // 2, 14), "bold"))
+                self.canvas.itemconfig(txt, text="♞", font=("Consolas", max(cs // 2, 14), "bold"))
 
     def _on_canvas_click(self, event):
         if self.is_running:
