@@ -40,7 +40,11 @@ def knight_tour(n: int, start_row: int, start_col: int):
     path = [(start_row, start_col)]
     success = False
 
+    attempts = 0
     while stack:
+        attempts += 1
+        if attempts % 1000000 == 0:
+            print(f"Tentativas: {attempts}...") # Se isso começar a printar sem parar, é Backtracking puro.
         row, col, move_num, moves_to_try = stack[-1]
 
         if move_num > total_squares:
