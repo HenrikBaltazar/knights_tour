@@ -5,7 +5,8 @@ import tkinter as tk
 import time
 import threading
 
-from knight_algo import knight_tour, can_have_solution_size,can_have_solution_pos
+# Mantendo seus imports originais
+from knight_algo import knight_tour, can_have_solution_size, can_have_solution_pos
 
 
 class KnightTourApp:
@@ -34,6 +35,7 @@ class KnightTourApp:
         self._build_ui()
         self._draw_board()
 
+        # O trace continua garantindo a reatividade do input manual
         self.board_size.trace_add("write", lambda *_: self._on_size_change())
 
     def _build_ui(self):
@@ -81,16 +83,31 @@ class KnightTourApp:
         ctrl = ttk.Labelframe(sidebar, text="Controles", bootstyle="info", padding=12)
         ctrl.pack(fill=X, pady=(0, 8))
 
-        # Board size
+        # --- SEÇÃO ALTERADA: Board size com botões +/- e INPUT MANUAL ---
         ttk.Label(ctrl, text="Tamanho do Tabuleiro", font=("Consolas", 9)).pack(anchor=W)
         size_frame = ttk.Frame(ctrl)
         size_frame.pack(fill=X, pady=(2, 8))
+
+        ttk.Button(
+            size_frame, text="-", width=3, bootstyle="info-outline",
+            command=lambda: self._adjust_size(-1)
+        ).pack(side=LEFT)
+
+        # Entry agora em estado NORMAL para aceitar digitação
+        self.size_entry = ttk.Entry(
+            size_frame, textvariable=self.board_size, font=("Consolas", 11, "bold"),
+            justify=CENTER, width=5
+        )
+        self.size_entry.pack(side=LEFT, expand=True, fill=X, padx=5)
+
+        ttk.Button(
+            size_frame, text="+", width=3, bootstyle="info-outline",
+            command=lambda: self._adjust_size(1)
+        ).pack(side=LEFT)
+
         self.size_label = ttk.Label(size_frame, text="8 x 8", font=("Consolas", 11, "bold"), bootstyle="info")
-        self.size_label.pack(side=RIGHT)
-        ttk.Scale(
-            size_frame, from_=1, to=31, variable=self.board_size,
-            bootstyle="info", command=lambda _: self._update_size_label(),
-        ).pack(side=LEFT, fill=X, expand=True, padx=(0, 8))
+        self.size_label.pack(side=RIGHT, padx=(8, 0))
+        # ------------------------------------------------
 
         # Speed
         ttk.Label(ctrl, text="Velocidade da Animacao", font=("Consolas", 9)).pack(anchor=W)
@@ -99,7 +116,7 @@ class KnightTourApp:
         self.speed_label = ttk.Label(speed_frame, text="200 ms", font=("Consolas", 11, "bold"), bootstyle="info")
         self.speed_label.pack(side=RIGHT)
         ttk.Scale(
-            speed_frame, from_=10, to=1000, variable=self.speed_ms,
+            speed_frame, from_=1, to=1000, variable=self.speed_ms,
             bootstyle="info", command=lambda _: self._update_speed_label(),
         ).pack(side=LEFT, fill=X, expand=True, padx=(0, 8))
 
@@ -164,23 +181,40 @@ class KnightTourApp:
         self.status_text = ttk.Label(self.status_frame, text=" Parado", font=("Consolas", 9), bootstyle="secondary")
         self.status_text.pack(side=LEFT)
 
+    def _adjust_size(self, delta):
+        try:
+            current = self.board_size.get()
+            self.board_size.set(max(1, min(255, current + delta)))
+        except tk.TclError:
+            self.board_size.set(8) # Fallback se o campo estiver vazio/inválido
+
     def _update_size_label(self):
-        n = int(self.board_size.get())
-        self.size_label.config(text=f"{n} x {n}")
+        try:
+            n = self.board_size.get()
+            self.size_label.config(text=f"{n} x {n}")
+        except tk.TclError:
+            pass
 
     def _update_speed_label(self):
         self.speed_label.config(text=f"{int(self.speed_ms.get())} ms")
 
     def _cell_size(self):
-        n = int(self.board_size.get())
-        w = self.canvas.winfo_width()
-        h = self.canvas.winfo_height()
-        return min(w // n, h // n, 72) if w > 1 and h > 1 else 50
+        try:
+            n = int(self.board_size.get())
+            w = self.canvas.winfo_width()
+            h = self.canvas.winfo_height()
+            return min(w // n, h // n, 72) if w > 1 and h > 1 else 50
+        except (tk.TclError, ValueError, ZeroDivisionError):
+            return 50
 
     def _draw_board(self):
         self.canvas.delete("all")
         self.cells.clear()
-        n = int(self.board_size.get())
+        try:
+            n = int(self.board_size.get())
+        except (tk.TclError, ValueError):
+            return # Não desenha se o input for inválido enquanto o usuário digita
+
         cs = self._cell_size()
         total_w = cs * n
         total_h = cs * n
@@ -204,7 +238,6 @@ class KnightTourApp:
                 )
                 self.cells[(r, c)] = (rect, txt)
 
-        # Redraw current state if exists
         if self.start_pos and not self.result:
             r, c = self.start_pos
             if (r, c) in self.cells:
@@ -215,7 +248,11 @@ class KnightTourApp:
     def _on_canvas_click(self, event):
         if self.is_running:
             return
-        n = int(self.board_size.get())
+        try:
+            n = int(self.board_size.get())
+        except (tk.TclError, ValueError):
+            return
+
         cs = self._cell_size()
         total_w = cs * n
         total_h = cs * n
@@ -233,7 +270,6 @@ class KnightTourApp:
             self.pos_label.config(text=f"Posicao: ({row}, {col})", bootstyle="info")
             self._draw_board()
 
-            # Check solvability
             if not can_have_solution_size(n):
                 self.warn_label.config(text=f"Tabuleiros {n}x{n} nao possuem solucao.")
                 self.start_btn.config(state=DISABLED)
@@ -245,6 +281,7 @@ class KnightTourApp:
                 self.start_btn.config(state=NORMAL)
 
     def _on_size_change(self):
+        self._update_size_label()
         self._on_reset()
         self._draw_board()
 
@@ -261,10 +298,13 @@ class KnightTourApp:
             self._set_status(True)
             return
 
-        n = int(self.board_size.get())
+        try:
+            n = int(self.board_size.get())
+        except (tk.TclError, ValueError):
+            return
+
         r, c = self.start_pos
 
-        # Solve in background thread
         self.start_btn.config(state=DISABLED)
         self.pause_btn.config(state=DISABLED)
         self._set_status(True)
@@ -272,7 +312,6 @@ class KnightTourApp:
         def solve_and_animate():
             success, board, path, exec_time = knight_tour(n, r, c)
             self.result = (success, board, path, exec_time)
-
             self.root.after(0, lambda: self._after_solve(success, board, path, exec_time, n))
 
         threading.Thread(target=solve_and_animate, daemon=True).start()
@@ -305,14 +344,12 @@ class KnightTourApp:
                 if self.stop_event.is_set():
                     return
                 self.pause_event.wait()
-
                 self.current_step = i + 1
 
                 def update(row=r, col=c, step=i + 1):
                     if (row, col) not in self.cells:
                         return
                     rect, txt = self.cells[(row, col)]
-                    # Color gradient from cyan to purple based on progress
                     progress = step / (n * n)
                     red = int(13 + progress * 130)
                     green = int(115 - progress * 80)
@@ -320,12 +357,8 @@ class KnightTourApp:
                     fill = f"#{red:02x}{green:02x}{blue:02x}"
                     self.canvas.itemconfig(rect, fill=fill, outline="#00fff5", width=1)
                     self.canvas.itemconfig(txt, text=str(step), font=("Consolas", max(cs // 4, 8), "bold"))
-
-                    # Highlight current position
                     if step == self.current_step:
                         self.canvas.itemconfig(rect, outline="#00fff5", width=2)
-
-                    # Update stats
                     self.stat_labels["step"].config(text=f"{step} / {n * n}")
 
                 self.root.after(0, update)
@@ -370,8 +403,11 @@ class KnightTourApp:
         self.pos_label.config(text="Posicao: clique no tabuleiro", bootstyle="warning")
         self.warn_label.config(text="")
         self.stat_labels["exec_time"].config(text="0.00 ms")
-        n = int(self.board_size.get())
-        self.stat_labels["step"].config(text=f"0 / {n * n}")
+        try:
+            n = int(self.board_size.get())
+            self.stat_labels["step"].config(text=f"0 / {n * n}")
+        except (tk.TclError, ValueError):
+            pass
         self.stat_labels["moves"].config(text="0")
         self._set_status(False)
         self._draw_board()
