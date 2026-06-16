@@ -18,9 +18,8 @@ class KnightTourApp:
         )
         self.root.minsize(900, 600)
  
-        # State
-        self.board_size = tk.IntVar(value=12)
-        self.speed_ms = tk.IntVar(value=50)
+        self.board_size = tk.IntVar(value=8)
+        self.speed_ms = tk.IntVar(value=100)
         self.start_pos = None
         self.is_running = False
         self.is_paused = False
@@ -37,11 +36,9 @@ class KnightTourApp:
         self.board_size.trace_add("write", lambda *_: self._on_size_change())
  
     def _build_ui(self):
-        # Main container
         main = ttk.Frame(self.root, padding=10)
         main.pack(fill=BOTH, expand=True)
  
-        # Header
         header = ttk.Frame(main)
         header.pack(fill=X, pady=(0, 10))
         ttk.Label(
@@ -52,95 +49,70 @@ class KnightTourApp:
         ).pack(side=LEFT)
         ttk.Label(
             header,
-            text="Knight's Tour - M3: D&C Híbrido",
+            text="M3: Modelagem por Grafos (DFS)",
             font=("Consolas", 9),
             bootstyle="secondary",
         ).pack(side=LEFT, padx=(12, 0), pady=(6, 0))
  
-        # Content: board + sidebar
         content = ttk.Frame(main)
         content.pack(fill=BOTH, expand=True)
  
-        # Board frame
         board_frame = ttk.Labelframe(content, text="Tabuleiro", bootstyle="info", padding=8)
         board_frame.pack(side=LEFT, fill=BOTH, expand=True, padx=(0, 10))
  
-        self.canvas = tk.Canvas(
-            board_frame, bg="#1a1a2e", highlightthickness=0, cursor="hand2"
-        )
+        self.canvas = tk.Canvas(board_frame, bg="#1a1a2e", highlightthickness=0, cursor="hand2")
         self.canvas.pack(fill=BOTH, expand=True)
         self.canvas.bind("<Configure>", lambda e: self._draw_board())
         self.canvas.bind("<Button-1>", self._on_canvas_click)
  
-        # Sidebar
         sidebar = ttk.Frame(content, width=280)
         sidebar.pack(side=RIGHT, fill=Y)
         sidebar.pack_propagate(False)
  
-        # Controls card
         ctrl = ttk.Labelframe(sidebar, text="Controles", bootstyle="info", padding=12)
         ctrl.pack(fill=X, pady=(0, 8))
  
-        # Board size (Atualizado p/ permitir demonstracao massiva)
         ttk.Label(ctrl, text="Tamanho do Tabuleiro", font=("Consolas", 9)).pack(anchor=W)
         size_frame = ttk.Frame(ctrl)
         size_frame.pack(fill=X, pady=(2, 8))
-        self.size_label = ttk.Label(size_frame, text="12 x 12", font=("Consolas", 11, "bold"), bootstyle="info")
+        self.size_label = ttk.Label(size_frame, text="8 x 8", font=("Consolas", 11, "bold"), bootstyle="info")
         self.size_label.pack(side=RIGHT)
         ttk.Scale(
-            size_frame, from_=5, to=24, variable=self.board_size,
+            size_frame, from_=5, to=100, variable=self.board_size,
             bootstyle="info", command=lambda _: self._update_size_label(),
         ).pack(side=LEFT, fill=X, expand=True, padx=(0, 8))
  
-        # Speed
         ttk.Label(ctrl, text="Velocidade da Animacao", font=("Consolas", 9)).pack(anchor=W)
         speed_frame = ttk.Frame(ctrl)
         speed_frame.pack(fill=X, pady=(2, 8))
-        self.speed_label = ttk.Label(speed_frame, text="50 ms", font=("Consolas", 11, "bold"), bootstyle="info")
+        self.speed_label = ttk.Label(speed_frame, text="100 ms", font=("Consolas", 11, "bold"), bootstyle="info")
         self.speed_label.pack(side=RIGHT)
         ttk.Scale(
             speed_frame, from_=0, to=500, variable=self.speed_ms,
             bootstyle="info", command=lambda _: self._update_speed_label(),
         ).pack(side=LEFT, fill=X, expand=True, padx=(0, 8))
  
-        # Start position
-        self.pos_label = ttk.Label(
-            ctrl, text="Posicao: clique no tabuleiro",
-            font=("Consolas", 9), bootstyle="warning",
-        )
+        self.pos_label = ttk.Label(ctrl, text="Posicao: clique no tabuleiro", font=("Consolas", 9), bootstyle="warning")
         self.pos_label.pack(anchor=W, pady=(0, 8))
  
-        # Buttons
         btn_frame = ttk.Frame(ctrl)
         btn_frame.pack(fill=X)
-        self.start_btn = ttk.Button(
-            btn_frame, text="Iniciar", bootstyle="info",
-            command=self._on_start, width=12,
-        )
+        self.start_btn = ttk.Button(btn_frame, text="Iniciar", bootstyle="info", command=self._on_start, width=12)
         self.start_btn.pack(side=LEFT, expand=True, fill=X, padx=(0, 4))
-        self.pause_btn = ttk.Button(
-            btn_frame, text="Pausar", bootstyle="warning",
-            command=self._on_pause, width=12, state=DISABLED,
-        )
+        self.pause_btn = ttk.Button(btn_frame, text="Pausar", bootstyle="warning", command=self._on_pause, width=12, state=DISABLED)
         self.pause_btn.pack(side=LEFT, expand=True, fill=X, padx=(0, 4))
-        ttk.Button(
-            btn_frame, text="Reset", bootstyle="danger-outline",
-            command=self._on_reset, width=8,
-        ).pack(side=LEFT)
+        ttk.Button(btn_frame, text="Reset", bootstyle="danger-outline", command=self._on_reset, width=8).pack(side=LEFT)
  
-        # Warning label
         self.warn_label = ttk.Label(ctrl, text="", font=("Consolas", 8), bootstyle="danger", wraplength=240)
         self.warn_label.pack(anchor=W, pady=(6, 0))
  
-        # Stats card
         stats = ttk.Labelframe(sidebar, text="Estatisticas", bootstyle="info", padding=12)
         stats.pack(fill=X, pady=(0, 8))
  
         stat_items = [
             ("Tempo de Execucao", "exec_time", "0.00 ms"),
-            ("Passo Atual", "step", "0 / 144"),
+            ("Passo Atual", "step", "0 / 64"),
             ("Estratégia", "strategy", "-"),
-            ("Complexidade (Big-O)", "complexity", "O(N^2) Garantido"),
         ]
         self.stat_labels = {}
         for label_text, key, default in stat_items:
@@ -151,7 +123,6 @@ class KnightTourApp:
             lbl.pack(anchor=W)
             self.stat_labels[key] = lbl
  
-        # Status indicator
         self.status_frame = ttk.Frame(stats)
         self.status_frame.pack(fill=X, pady=(8, 0))
         self.status_dot = ttk.Label(self.status_frame, text="[o]", font=("Consolas", 10), bootstyle="secondary")
@@ -194,7 +165,6 @@ class KnightTourApp:
                 fill = "#0f0f23" if dark else "#16213e"
                 rect = self.canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline="#1a1a3e", width=1)
                 
-                # Adaptação de fonte para suportar tabuleiros até 24x24
                 font_sz = max(cs // 4, 6)
                 txt = self.canvas.create_text(
                     x1 + cs // 2, y1 + cs // 2, text="", fill="#e0e0e0",
@@ -202,7 +172,6 @@ class KnightTourApp:
                 )
                 self.cells[(r, c)] = (rect, txt)
  
-        # Redraw current state if exists
         if self.start_pos and not self.result:
             r, c = self.start_pos
             if (r, c) in self.cells:
@@ -231,7 +200,6 @@ class KnightTourApp:
             self.pos_label.config(text=f"Posicao: ({row}, {col})", bootstyle="info")
             self._draw_board()
  
-            # Check solvability
             if not can_have_solution_size(n):
                 self.warn_label.config(text=f"Tabuleiros {n}x{n} nao possuem solucao.")
                 self.start_btn.config(state=DISABLED)
@@ -262,7 +230,6 @@ class KnightTourApp:
         n = int(self.board_size.get())
         r, c = self.start_pos
  
-        # Solve in background thread
         self.start_btn.config(state=DISABLED)
         self.pause_btn.config(state=DISABLED)
         self._set_status(True)
@@ -270,7 +237,6 @@ class KnightTourApp:
         def solve_and_animate():
             success, board, path, exec_time, strategy = knight_tour(n, r, c)
             self.result = (success, board, path, exec_time)
- 
             self.root.after(0, lambda: self._after_solve(success, board, path, exec_time, n, strategy))
  
         threading.Thread(target=solve_and_animate, daemon=True).start()
@@ -310,7 +276,6 @@ class KnightTourApp:
                     if (row, col) not in self.cells:
                         return
                     rect, txt = self.cells[(row, col)]
-                    # Color gradient from cyan to purple based on progress
                     progress = step / (n * n)
                     red = int(13 + progress * 130)
                     green = int(115 - progress * 80)
@@ -321,11 +286,9 @@ class KnightTourApp:
                     font_sz = max(cs // 4, 6)
                     self.canvas.itemconfig(txt, text=str(step), font=("Consolas", font_sz, "bold"))
  
-                    # Highlight current position
                     if step == self.current_step:
                         self.canvas.itemconfig(rect, outline="#00fff5", width=2)
  
-                    # Update stats
                     self.stat_labels["step"].config(text=f"{step} / {n * n}")
  
                 self.root.after(0, update)
@@ -386,7 +349,6 @@ class KnightTourApp:
  
     def run(self):
         self.root.mainloop()
- 
  
 if __name__ == "__main__":
     app = KnightTourApp()
