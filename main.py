@@ -350,6 +350,13 @@ class KnightTourApp:
     def run(self):
         self.root.mainloop()
  
+
 if __name__ == "__main__":
-    app = KnightTourApp()
-    app.run()
+    import sys
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--cli":
+        import cli
+        cli.main()
+    else:
+        app = KnightTourApp()
+        app.run()
