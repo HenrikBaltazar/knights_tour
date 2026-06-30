@@ -88,7 +88,7 @@ class KnightTourApp:
         self.size_label = ttk.Label(size_frame, text="8 x 8", font=("Consolas", 11, "bold"), bootstyle="info")
         self.size_label.pack(side=RIGHT)
         ttk.Scale(
-            size_frame, from_=1, to=12, variable=self.board_size,
+            size_frame, from_=1, to=32, variable=self.board_size,
             bootstyle="info", command=lambda _: self._update_size_label(),
         ).pack(side=LEFT, fill=X, expand=True, padx=(0, 8))
 
